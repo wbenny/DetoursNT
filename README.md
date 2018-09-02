@@ -33,7 +33,7 @@ After that, compile **DetoursNT** using Visual Studio 2017. Solution file is inc
 
 ### Usage
 
-After you hit `F7` in Visual Studio and have everyting compiled, you can check that `SampleHookDLL.dll`
+After you hit `F7` in Visual Studio and have everything compiled, you can check that `SampleHookDLL.dll`
 indeed depends only on `NTDLL.DLL`:
 
 ![Dependency Walker](Images/depends.png)
