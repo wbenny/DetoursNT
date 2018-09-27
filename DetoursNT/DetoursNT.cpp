@@ -153,7 +153,7 @@ extern "C" {
 
 #endif
 
-#ifndef D
+#ifndef DETOURSNT_NO_EH
 
 typedef struct _ANSI_STRING {
   USHORT Length;
@@ -267,7 +267,7 @@ _except_handler3(
 
 #endif // _M_IX86
 
-#endif // D
+#endif // DETOURSNT_NO_EH
 
 #pragma endregion
 
