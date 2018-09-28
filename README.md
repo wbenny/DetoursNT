@@ -8,7 +8,7 @@ the original code.
 - Because this way you can hook native processes.
 - Because this way you can load your hooking library **right after** load of `NTDLL.DLL`
   - This can be achieved in many ways - for example using Windows Driver via so-called APC injection.
-    You can look at my project [KeInject][keinject] to get an idea about how is this done.
+    You can look at my project [injdrv][injdrv] to get an idea about how is this done.
 
 ### How?
 
@@ -65,6 +65,6 @@ If you find this project interesting, you can buy me a coffee
 ```
 
   [detours]: <https://github.com/Microsoft/Detours>
-  [keinject]: <https://github.com/wbenny/keinject>
+  [injdrv]: <https://github.com/wbenny/injdrv>
   [reactos]: <https://www.reactos.org/>
   [processhacker]: <https://github.com/processhacker/processhacker/tree/master/phnt/include>
