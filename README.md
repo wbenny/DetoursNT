@@ -48,7 +48,7 @@ This hooking DLL only hooks `NtTestAlert` function for demonstrative purposes. I
 
 - This implementation intentionally crashes on SEH exceptions which occur inside of Detours. This is because SEH
   handlers are usually located in CRT (which is ommited here).
-- Only x86 and x64 is currently supported.
+- Supported architectures are: x86, x64, ARM (32-bit) and ARM64.
 
 
 ### License

@@ -1,7 +1,16 @@
+//
+// Workaround for VS2017 to force this library to
+// be compilable on ARM.
+//
+
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #include <windows.h>
 
 #include "DetoursNT.h"
+
+//
+// Exception handling.
+//
 
 // #define DETOURSNT_NO_EH
 
@@ -189,7 +198,7 @@ LdrGetProcedureAddress(
   OUT PVOID *ProcedureAddress
   );
 
-#ifdef _M_AMD64
+#if defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM)
 
 EXCEPTION_DISPOSITION
 __cdecl
@@ -201,14 +210,7 @@ __C_specific_handler(
   )
 {
 #if 0
-  typedef EXCEPTION_DISPOSITION (__cdecl * pfn__C_specific_handler)(
-    _In_ struct _EXCEPTION_RECORD* ExceptionRecord,
-    _In_ void* EstablisherFrame,
-    _Inout_ struct _CONTEXT* ContextRecord,
-    _Inout_ struct _DISPATCHER_CONTEXT* DispatcherContext
-    );
-
-  static pfn__C_specific_handler Procedure = NULL;
+  static decltype(__C_specific_handler)* Procedure = nullptr;
 
   if (!Procedure)
   {
@@ -235,9 +237,9 @@ __C_specific_handler(
 #endif
 }
 
-#endif // _M_IA64
+#endif // defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM)
 
-#if _M_IX86
+#if defined(_M_IX86)
 
 int
 _callnewh(
@@ -265,7 +267,7 @@ _except_handler3(
   return (EXCEPTION_DISPOSITION)0;
 }
 
-#endif // _M_IX86
+#endif // defined(_M_IX86)
 
 #endif // DETOURSNT_NO_EH
 

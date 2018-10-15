@@ -1,5 +1,10 @@
 #pragma once
 
+//
+// Workaround for VS2017 to force this library to
+// be compilable on ARM.
+//
+
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 #include <windows.h>
 
@@ -8,6 +13,10 @@ extern "C" {
 #endif
 
 #pragma region CRT
+
+//
+// __ImageBase is automatically provided by the linker.
+//
 
 extern IMAGE_DOS_HEADER __ImageBase;
 
