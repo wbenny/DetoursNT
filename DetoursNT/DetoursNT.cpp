@@ -9,16 +9,170 @@
 #include "DetoursNT.h"
 
 //
-// Exception handling.
+// Enable/disable exception handling routines.
 //
-
 // #define DETOURSNT_NO_EH
+
+//
+// Enable/disable CRT routines.
+//
+// #define DETOURSNT_NO_CRT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#pragma region NTDLL.DLL
+
+#define NT_SUCCESS(Status)        (((NTSTATUS)(Status)) >= 0)
+
+#define NtCurrentPeb()            (NtCurrentTeb()->ProcessEnvironmentBlock)
+#define RtlProcessHeap()          (NtCurrentPeb()->ProcessHeap)
+
+#define RTL_CONSTANT_STRING(s)    { sizeof(s)-sizeof((s)[0]), sizeof(s), s }
+
+// #define _CLIENT_ID  Mock__CLIENT_ID
+// #define CLIENT_ID   Mock_CLIENT_ID
+// #define PCLIENT_ID  Mock_PCLIENT_ID
+//
+// #define _TEB        Mock__TEB
+// #define TEB         Mock_TEB
+// #define PTEB        Mock_PTEB
+
+typedef struct _PEB_LDR_DATA PEB_LDR_DATA, *PPEB_LDR_DATA;
+typedef struct _RTL_USER_PROCESS_PARAMETERS RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS;
+
+typedef struct _ANSI_STRING {
+  USHORT Length;
+  USHORT MaximumLength;
+  PSTR   Buffer;
+} ANSI_STRING;
+typedef ANSI_STRING *PANSI_STRING;
+
+typedef struct _UNICODE_STRING {
+  USHORT Length;
+  USHORT MaximumLength;
+  PWSTR  Buffer;
+} UNICODE_STRING;
+typedef UNICODE_STRING *PUNICODE_STRING;
+
+typedef struct _CLIENT_ID
+{
+  HANDLE UniqueProcess;
+  HANDLE UniqueThread;
+} CLIENT_ID, *PCLIENT_ID;
+
+typedef struct _PEB
+{
+  BOOLEAN InheritedAddressSpace;
+  BOOLEAN ReadImageFileExecOptions;
+  BOOLEAN BeingDebugged;
+  union
+  {
+    BOOLEAN BitField;
+    struct
+    {
+      BOOLEAN ImageUsesLargePages : 1;
+      BOOLEAN IsProtectedProcess : 1;
+      BOOLEAN IsImageDynamicallyRelocated : 1;
+      BOOLEAN SkipPatchingUser32Forwarders : 1;
+      BOOLEAN IsPackagedProcess : 1;
+      BOOLEAN IsAppContainer : 1;
+      BOOLEAN IsProtectedProcessLight : 1;
+      BOOLEAN IsLongPathAwareProcess : 1;
+    };
+  };
+
+  HANDLE Mutant;
+
+  PVOID ImageBaseAddress;
+  PPEB_LDR_DATA Ldr;
+  PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
+  PVOID SubSystemData;
+  PVOID ProcessHeap;
+
+  //
+  // ...
+  //
+
+} PEB, *PPEB;
+
+typedef struct _TEB
+{
+  NT_TIB NtTib;
+
+  PVOID EnvironmentPointer;
+  CLIENT_ID ClientId;
+  PVOID ActiveRpcHandle;
+  PVOID ThreadLocalStoragePointer;
+  PPEB ProcessEnvironmentBlock;
+
+  //
+  // ...
+  //
+
+} TEB, *PTEB;
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlAllocateHeap(
+  _In_ PVOID HeapHandle,
+  _In_opt_ ULONG Flags,
+  _In_ SIZE_T Size
+  );
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlFreeHeap(
+  _In_ PVOID HeapHandle,
+  _In_opt_ ULONG Flags,
+  _Frees_ptr_opt_ PVOID BaseAddress
+  );
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlReAllocateHeap(
+  _In_ PVOID HeapHandle,
+  _In_ ULONG Flags,
+  _Frees_ptr_opt_ PVOID BaseAddress,
+  _In_ SIZE_T Size
+  );
+
+NTSYSAPI
+ULONG
+NTAPI
+RtlNtStatusToDosError(
+  _In_ NTSTATUS Status
+  );
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrLoadDll(
+  _In_opt_ PWSTR DllPath,
+  _In_opt_ PULONG DllCharacteristics,
+  _In_ PUNICODE_STRING DllName,
+  _Out_ PVOID *DllHandle
+  );
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrGetProcedureAddress(
+  _In_ PVOID DllHandle,
+  _In_opt_ PANSI_STRING ProcedureName,
+  _In_opt_ ULONG ProcedureNumber,
+  _Out_ PVOID *ProcedureAddress
+  );
+
+#pragma endregion
+
 #pragma region CRT
+
+#ifndef DETOURSNT_NO_CRT
 
 #pragma function(memset)
 void* __cdecl
@@ -60,16 +214,12 @@ memcpy(
   return dest;
 }
 
-//
-// TODO: Use RtlCreateHeap/RtlAllocateHeap/RtlFreeHeap?
-//
-
 void* __cdecl
 malloc(
   size_t size
   )
 {
-  return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  return RtlAllocateHeap(RtlProcessHeap(), 0, size);
 }
 
 void* __cdecl
@@ -101,7 +251,7 @@ free(
   void* ptr
   )
 {
-  VirtualFree(ptr, 0, MEM_RELEASE);
+  RtlFreeHeap(RtlProcessHeap(), 0, ptr);
 }
 
 #ifdef __cplusplus
@@ -163,40 +313,6 @@ extern "C" {
 #endif
 
 #ifndef DETOURSNT_NO_EH
-
-typedef struct _ANSI_STRING {
-  USHORT Length;
-  USHORT MaximumLength;
-  PSTR   Buffer;
-} ANSI_STRING;
-typedef ANSI_STRING *PANSI_STRING;
-
-typedef struct _UNICODE_STRING {
-  USHORT Length;
-  USHORT MaximumLength;
-  PWSTR  Buffer;
-} UNICODE_STRING;
-typedef UNICODE_STRING *PUNICODE_STRING;
-
-#define RTL_CONSTANT_STRING(s) { sizeof(s)-sizeof((s)[0]), sizeof(s), s }
-
-NTSTATUS
-NTAPI
-LdrLoadDll(
-  IN PWSTR SearchPath OPTIONAL,
-  IN PULONG DllCharacteristics OPTIONAL,
-  IN PUNICODE_STRING DllName,
-  OUT PVOID *BaseAddress
-  );
-
-NTSTATUS
-NTAPI
-LdrGetProcedureAddress(
-  IN PVOID BaseAddress,
-  IN PANSI_STRING Name,
-  IN ULONG Ordinal,
-  OUT PVOID *ProcedureAddress
-  );
 
 #if defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_ARM)
 
@@ -271,6 +387,8 @@ _except_handler3(
 
 #endif // DETOURSNT_NO_EH
 
+#endif // DETOURSNT_NO_CRT
+
 #pragma endregion
 
 #pragma region Detours/module.cpp
@@ -314,36 +432,6 @@ ULONG WINAPI DetourGetModuleSize(_In_opt_ HMODULE hModule)
 #pragma endregion
 
 #pragma region KERNEL32.DLL
-
-#define NT_SUCCESS(Status)        (((NTSTATUS)(Status)) >= 0)
-
-NTSYSAPI
-ULONG
-NTAPI
-RtlNtStatusToDosError(
-  _In_ NTSTATUS Status
-  );
-
-#define _CLIENT_ID  Mock__CLIENT_ID
-#define CLIENT_ID   Mock_CLIENT_ID
-#define PCLIENT_ID  Mock_PCLIENT_ID
-
-// #define _TEB        Mock__TEB
-// #define TEB         Mock_TEB
-// #define PTEB        Mock_PTEB
-
-typedef struct _CLIENT_ID
-{
-  HANDLE UniqueProcess;
-  HANDLE UniqueThread;
-} CLIENT_ID, *PCLIENT_ID;
-
-typedef struct _TEB
-{
-  NT_TIB    Tib;
-  PVOID     EnvironmentPointer;
-  CLIENT_ID ClientId;
-} TEB, *PTEB;
 
 static DWORD g_LastError = 0;
 
