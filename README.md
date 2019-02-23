@@ -60,8 +60,8 @@ This software is open-source under the MIT license. See the LICENSE.txt file in 
 If you find this project interesting, you can buy me a coffee
 
 ```
-  BTC 12hwTTPYDbkVqsfpGjrsVa7WpShvQn24ro
-  LTC LLDVqnBEMS8Tv7ZF1otcy56HDhkXVVFJDH
+  BTC 3GwZMNGvLCZMi7mjL8K6iyj6qGbhkVMNMF
+  LTC MQn5YC7bZd4KSsaj8snSg4TetmdKDkeCYk
 ```
 
   [detours]: <https://github.com/Microsoft/Detours>
