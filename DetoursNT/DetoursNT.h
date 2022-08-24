@@ -355,3 +355,11 @@ SetThreadContext(
 #ifdef __cplusplus
 }
 #endif
+
+//
+// Avoid linking errors in DEBUG builds.
+// Detour_AssertExprWithFunctionName() is using GetModuleFileName() and _CrtDbgReport() functions,
+// which aren't located in the NTDLL.
+//
+
+#undef _DEBUG
