@@ -106,6 +106,7 @@ typedef struct _TEB
   PVOID ActiveRpcHandle;
   PVOID ThreadLocalStoragePointer;
   PPEB ProcessEnvironmentBlock;
+  ULONG LastErrorValue;
 
   //
   // ...
@@ -433,15 +434,13 @@ ULONG WINAPI DetourGetModuleSize(_In_opt_ HMODULE hModule)
 
 #pragma region KERNEL32.DLL
 
-static DWORD g_LastError = 0;
-
 DWORD
 WINAPI
 GetLastError(
   VOID
   )
 {
-  return g_LastError;
+  return NtCurrentTeb()->LastErrorValue;
 }
 
 VOID
@@ -450,7 +449,8 @@ SetLastError(
   IN DWORD dwErrCode
   )
 {
-  g_LastError = dwErrCode;
+  if (NtCurrentTeb()->LastErrorValue != dwErrCode)
+    NtCurrentTeb()->LastErrorValue = dwErrCode;
 }
 
 DWORD
